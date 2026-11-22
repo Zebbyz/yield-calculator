@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en-NZ">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rental Yield Calculator</title>
+  <meta name="description" content="New Zealand rental yield calculator for purchase price, rent, costs and mortgage cash flow. Runs in your browser.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <p class="kicker">New Zealand property</p>
+      <h1>Rental Yield Calculator</h1>
+      <p class="lede">Estimate the return on a New Zealand rental before you buy. Enter a purchase price, a weekly rent bracket and your costs. Low, mid and high results update as you type. All amounts are in New Zealand dollars. Your figures stay in this browser: there is no account and nothing is collected.</p>
+    </div>
+  </header>
+  <main class="wrap">
+    <p class="jump-row"><a class="jump" href="#results">Jump to results</a></p>
+    <noscript>
+      <p class="noscript">This calculator needs JavaScript. It still runs only on your device and does not send your figures anywhere.</p>
+    </noscript>
+    <form id="calculator" autocomplete="off" novalidate>
+      <section class="panel" aria-labelledby="purchase-heading">
+        <h2 id="purchase-heading">Purchase and rent</h2>
+        <p class="panel-note">The fields start with a worked example. Replace any figure with your own.</p>
+        <div class="fields">
+          <div class="field span-2">
+            <label for="price">Purchase price</label>
+            <div class="affix">
+              <span class="affix-prefix" aria-hidden="true">$</span>
+              <input id="price" name="price" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="800000" aria-describedby="price-hint">
+            </div>
+            <p class="hint" id="price-hint">The price you would pay for the property.</p>
+          </div>
+          <div class="field">
+            <label for="rent-low">Lowest weekly rent</label>
+            <div class="affix">
+              <span class="affix-prefix" aria-hidden="true">$</span>
+              <input id="rent-low" name="rentLow" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="550" aria-describedby="rent-low-hint">
+            </div>
+            <p class="hint" id="rent-low-hint">The low end of the rent you would advertise.</p>
+          </div>
+          <div class="field">
+            <label for="rent-high">Highest weekly rent</label>
+            <div class="affix">
+              <span class="affix-prefix" aria-hidden="true">$</span>
+              <input id="rent-high" name="rentHigh" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="650" aria-describedby="rent-high-hint">
+            </div>
+            <p class="hint" id="rent-high-hint">The high end of the rent you would advertise.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="annual-heading">
+        <h2 id="annual-heading">Annual costs</h2>
+        <div class="fields">
+          <div class="field">
+            <label for="rates">Council rates</label>
+            <div class="affix">
+              <span class="affix-prefix" aria-hidden="true">$</span>
+              <input id="rates" name="rates" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="3200">
+            </div>
+          </div>
+          <div class="field">
+            <label for="insurance">Insurance</label>
+            <div class="affix">
+              <span class="affix-prefix" aria-hidden="true">$</span>
+              <input id="insurance" name="insurance" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="1800">
+            </div>
+          </div>
+          <div class="field">
+            <label for="body-corp">Body corporate fees</label>
+            <div class="affix">
+              <span class="affix-prefix" aria-hidden="true">$</span>
+              <input id="body-corp" name="bodyCorp" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="0">
+            </div>
+          </div>
+          <div class="field">
+            <label for="water">Water rates</label>
+            <div class="affix">
+              <span class="affix-prefix" aria-hidden="true">$</span>
+              <input id="water" name="water" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="800">
+            </div>
+          </div>
+          <div class="field">
+            <label for="maintenance">Maintenance and repairs</label>
+            <div class="affix">
+              <span class="affix-prefix" aria-hidden="true">$</span>
+              <input id="maintenance" name="maintenance" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="2000">
+            </div>
+          </div>
+          <div class="field">
+            <label for="other">Other costs</label>
+            <div class="affix">
+              <span class="affix-prefix" aria-hidden="true">$</span>
+              <input id="other" name="other" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="0" aria-describedby="other-hint">
+            </div>
+            <p class="hint" id="other-hint">Any other yearly cost of holding the property.</p>
+          </div>
+          <div class="field">
+            <label for="management">Property management fee</label>
+            <div class="affix">
+              <input id="management" name="management" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="8" aria-describedby="management-hint">
+              <span class="affix-suffix" aria-hidden="true">%</span>
+            </div>
+            <p class="hint" id="management-hint">Percent of rent collected after vacant weeks. 8 means 8%.</p>
+          </div>
+          <div class="field">
+            <label for="vacancy">Vacancy allowance (weeks vacant per year)</label>
+            <div class="affix">
+              <input id="vacancy" name="vacancy" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="2" aria-describedby="vacancy-hint">
+              <span class="affix-suffix" aria-hidden="true">weeks</span>
+            </div>
+            <p class="hint" id="vacancy-hint">Weeks with no tenant, out of 52. Lost rent is counted as a cost.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="purchase-costs-heading">
+        <h2 id="purchase-costs-heading">Purchase costs</h2>
+        <div class="fields">
+          <div class="field span-2">
+            <span class="field-label" id="deposit-label">Deposit</span>
+            <div class="segment" role="radiogroup" aria-labelledby="deposit-label">
+              <label>
+                <input type="radio" name="depositMode" value="pct" checked>
+                <span>Percent</span>
+              </label>
+              <label>
+                <input type="radio" name="depositMode" value="nzd">
+                <span>Dollars</span>
+              </label>
+            </div>
+            <div class="affix">
+              <span class="affix-prefix" id="deposit-prefix" aria-hidden="true" hidden>$</span>
+              <input id="deposit" name="deposit" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="20" aria-labelledby="deposit-label" aria-describedby="deposit-hint">
+              <span class="affix-suffix" id="deposit-suffix" aria-hidden="true">%</span>
+            </div>
+            <p class="hint" id="deposit-hint">Percent of the purchase price, or switch to dollars.</p>
+          </div>
+          <div class="field">
+            <label for="legal">Legal fees</label>
+            <div class="affix">
+              <span class="affix-prefix" aria-hidden="true">$</span>
+              <input id="legal" name="legal" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="2500">
+            </div>
+          </div>
+          <div class="field">
+            <label for="inspection">Building inspection</label>
+            <div class="affix">
+              <span class="affix-prefix" aria-hidden="true">$</span>
+              <input id="inspection" name="inspection" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="800">
+            </div>
+          </div>
+          <div class="field span-2">
+            <label for="purchase-other">Other one-off costs</label>
+            <div class="affix">
+              <span class="affix-prefix" aria-hidden="true">$</span>
+              <input id="purchase-other" name="purchaseOther" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="0" aria-describedby="purchase-other-hint">
+            </div>
+            <p class="hint" id="purchase-other-hint">Any other cash cost at purchase, such as a LIM report or a valuation.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="mortgage-heading">
+        <h2 id="mortgage-heading">Mortgage</h2>
+        <div class="fields">
+          <div class="field">
+            <label for="interest">Interest rate</label>
+            <div class="affix">
+              <input id="interest" name="interest" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="6.5" aria-describedby="interest-hint">
+              <span class="affix-suffix" aria-hidden="true">%</span>
+            </div>
+            <p class="hint" id="interest-hint">The annual interest rate. 6.5 means 6.5%.</p>
+          </div>
+          <div class="field">
+            <label for="term">Loan term (years)</label>
+            <div class="affix">
+              <input id="term" name="term" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="30" aria-describedby="term-hint">
+              <span class="affix-suffix" aria-hidden="true">years</span>
+            </div>
+            <p class="hint" id="term-hint">Used for principal and interest. Interest only ignores the term.</p>
+          </div>
+          <div class="field span-2">
+            <span class="field-label" id="loan-type-label">Repayment</span>
+            <div class="segment" role="radiogroup" aria-labelledby="loan-type-label">
+              <label>
+                <input type="radio" name="loanType" value="io">
+                <span>Interest only</span>
+              </label>
+              <label>
+                <input type="radio" name="loanType" value="pi" checked>
+                <span>Principal and interest</span>
+              </label>
+            </div>
+            <p class="hint">Interest only is one year of interest. Principal and interest uses a monthly repayment over the loan term, then shows the weekly equivalent.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="results" aria-labelledby="results-heading">
+        <div class="results-head">
+          <div class="results-title">
+            <h2 id="results-heading">Results</h2>
+          </div>
+          <div class="results-actions">
+            <div class="field">
+              <label for="target">Target gross yield</label>
+              <div class="affix">
+                <input id="target" name="target" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="5" aria-describedby="target-hint">
+                <span class="affix-suffix" aria-hidden="true">%</span>
+              </div>
+              <p class="hint" id="target-hint">Shows the purchase price that would earn this gross yield at each rent.</p>
+            </div>
+            <button type="button" class="copy-button" id="copy-link">Copy link with my numbers</button>
+          </div>
+          <p class="results-lede">Each card uses the same costs and the same mortgage. Only the rent changes. Returns are before tax.</p>
+        </div>
+        <p id="copy-status" class="copy-status" role="status"></p>
+        <input id="copy-fallback" class="copy-fallback" type="text" readonly hidden aria-label="Share link">
+        <div id="warnings" class="warnings" hidden></div>
+        <div id="assumptions" class="assumptions"></div>
+        <div id="scenarios" class="scenarios"></div>
+      </section>
+    </form>
+
+    <details class="method">
+      <summary>How the numbers are worked out</summary>
+      <ul>
+        <li>A year is 52 weeks. Money is rounded to the nearest cent. Yields and returns are rounded to two decimal places.</li>
+        <li>Low rent uses the lowest weekly rent field. High rent uses the highest weekly rent field. Mid rent is halfway between them.</li>
+        <li>Gross yield is annual rent divided by the purchase price. Annual rent is weekly rent times 52. Vacancy and costs are not deducted. This matches the gross yield quoted on most New Zealand listing sites.</li>
+        <li>Fixed annual costs are council rates, insurance, body corporate fees, water rates, maintenance and repairs, and other annual costs.</li>
+        <li>The vacancy allowance is weekly rent times the weeks vacant. The property management fee is your percentage of the rent collected in the other weeks.</li>
+        <li>Total annual operating costs are the fixed costs, the vacancy allowance and the management fee. Net operating income is annual rent minus those costs.</li>
+        <li>Net yield is net operating income divided by the purchase price. The mortgage is not taken off in the net yield.</li>
+        <li>The loan is the purchase price minus the deposit. A percent deposit is that percent of the purchase price. Cash invested is the deposit plus legal fees, the building inspection and other one-off costs.</li>
+        <li>Cash-on-cash return is annual cash flow after the mortgage, divided by cash invested, before tax. Income tax is not calculated.</li>
+        <li>Principal and interest is a standard monthly repayment over the loan term. The annual repayment is the monthly amount times 12. The weekly repayment is the annual amount divided by 52. Interest only is one year of interest on the loan, and does not use the loan term.</li>
+        <li>Weekly cash flow is net operating income minus the annual mortgage, divided by 52.</li>
+        <li>Break-even weekly rent is the rent that makes cash flow zero. It is the same on every card.</li>
+        <li>The price for your target gross yield is annual rent divided by that yield. The target starts at 5%. Each rent has its own price.</li>
+        <li>Enter rent as the amount the tenant pays. Residential rent in New Zealand is generally exempt from GST. If a manager adds GST to their fee, include it in the percentage.</li>
+      </ul>
+    </details>
+
+    <section class="disclaimer" aria-label="Important note">
+      <h2>Please note</h2>
+      <p>These figures are estimates only and are not financial advice. The bright-line test and interest deductibility rules may apply, so check with an accountant.</p>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap">
+      <p><a href="https://unlimitedpotential.co.nz" target="_blank" rel="noopener noreferrer">Concept, design and execution by Unlimited Potential</a></p>
+    </div>
+  </footer>
+  <script src="calculator.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
