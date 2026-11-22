@@ -13,7 +13,7 @@
     <div class="wrap">
       <p class="kicker">New Zealand property</p>
       <h1>Rental Yield Calculator</h1>
-      <p class="lede">Estimate the return on a New Zealand rental before you buy. Enter a purchase price, a weekly rent bracket and your costs. Low, mid and high results update as you type. All amounts are in New Zealand dollars. Your figures stay in this browser: there is no account and nothing is collected.</p>
+      <p class="lede">Estimate the return on a New Zealand rental before you buy. Enter a purchase price, a weekly rent bracket and your costs, or paste a Property Brokers listing link. Low, mid and high results update as you type. All amounts are in New Zealand dollars. The figures you type stay in this browser. Importing a listing sends that public link to this site so the listing page can be read. There is no account.</p>
     </div>
   </header>
   <main class="wrap">
@@ -22,6 +22,17 @@
       <p class="noscript">This calculator needs JavaScript. It still runs only on your device and does not send your figures anywhere.</p>
     </noscript>
     <form id="calculator" autocomplete="off" novalidate>
+      <section class="panel" aria-labelledby="import-heading">
+        <h2 id="import-heading">Import a listing</h2>
+        <label for="import-url">Paste a Property Brokers listing link</label>
+        <div class="import-row">
+          <input id="import-url" name="importUrl" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://www.propertybrokers.co.nz/residential/sale/...">
+          <button type="button" class="import-button" id="import-button">Import</button>
+        </div>
+        <p class="hint">The link must be a residential sale page on propertybrokers.co.nz or pb.co.nz. Only a price that is shown on the listing is used.</p>
+        <p id="import-status" class="import-status" role="status"></p>
+        <div id="import-card" class="import-card" hidden></div>
+      </section>
       <section class="panel" aria-labelledby="purchase-heading">
         <h2 id="purchase-heading">Purchase and rent</h2>
         <p class="panel-note">The fields start with a worked example. Replace any figure with your own.</p>
@@ -50,6 +61,7 @@
             </div>
             <p class="hint" id="rent-high-hint">The high end of the rent you would advertise.</p>
           </div>
+          <p class="hint span-2" id="rent-estimate" hidden></p>
         </div>
       </section>
 

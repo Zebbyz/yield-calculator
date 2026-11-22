@@ -659,3 +659,137 @@ h1 {
     align-items: stretch;
   }
 }
+
+label[for="import-url"] {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.import-row {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.import-row input {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 12px;
+  font-size: 16px;
+  border: 1px solid #cfc8ba;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.import-row input:focus-visible {
+  outline: 3px solid var(--green);
+  outline-offset: 2px;
+}
+
+.import-button {
+  appearance: none;
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--green);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 14px 16px;
+}
+
+.import-button:hover {
+  background: var(--green-dark);
+}
+
+.import-button:focus-visible {
+  outline: 3px solid var(--green);
+  outline-offset: 2px;
+}
+
+.import-button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.import-status {
+  margin-top: 10px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.import-status:empty {
+  display: none;
+}
+
+.import-status.is-error {
+  color: var(--red);
+}
+
+.import-status.is-success {
+  color: var(--green);
+}
+
+.import-card {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--green-soft);
+  border: 1px solid #b7deca;
+  min-width: 0;
+}
+
+.import-address {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  overflow-wrap: anywhere;
+}
+
+.import-facts {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.import-facts div {
+  min-width: 0;
+}
+
+.import-facts dt {
+  font-weight: 700;
+}
+
+.import-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.import-prompt {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--amber);
+  border: 1px solid var(--amber-line);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.import-rent {
+  margin-top: 12px;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 720px) {
+  .import-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .import-button {
+    width: auto;
+  }
+}

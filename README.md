@@ -1,25 +1,33 @@
 # Rental Yield Calculator
 
-A public, single-page New Zealand property purchase and rental yield calculator. It runs entirely in the browser. There is no account, no backend, and nothing is collected.
+A public, single-page New Zealand property purchase and rental yield calculator. The figures you type stay in the browser. There is no account. Pasting a Property Brokers link sends that public link to the site so the listing page can be read.
 
-Open `public/index.html`, enter your own figures, and read low, mid and high rent results as you type. Use **Copy link with my numbers** to share a link that refills the same inputs.
+Open the page, enter your own figures, and read low, mid and high rent results as you type. Use **Copy link with my numbers** to share a link that refills the same inputs. You can also paste a Property Brokers residential sale link and import the visible listing details.
 
 ## Files
 
 - `public/index.html`: the page
 - `public/styles.css`: layout and theme
 - `public/calculator.js`: the calculations and money formatting
-- `public/app.js`: the form, live results, and share link
+- `public/app.js`: the form, live results, listing import, and share link
 - `public/favicon.svg`: the tab icon
-- `wrangler.jsonc`: Cloudflare Workers static assets config
+- `src/index.js`: the Worker. It serves `GET /api/import` and passes every other request to the assets binding
+- `src/parser.js`: reads a Property Brokers listing page
+- `src/rents.js`: matches a listing town to the bundled bond data
+- `src/url.js`: allows only https Property Brokers residential sale links
+- `src/market-rents.json`: lower quartile, median and upper quartile weekly rents from the MBIE monthly CSV
+- `scripts/build-market-rents.mjs`: downloads that CSV and rewrites `src/market-rents.json`
+- `wrangler.jsonc`: Worker name `yield-calculator`, main script `src/index.js`, assets directory `./public`, assets binding `ASSETS`
 
 ## Preview locally
 
-Open `public/index.html` in a browser, or serve the folder:
+The import button needs the Worker, so run Wrangler:
 
 ```bash
-python3 -m http.server 8765 --directory public
+npx wrangler dev
 ```
+
+Opening `public/index.html` on its own still runs the calculator. The import request will fail until the Worker is running.
 
 ## Deploy
 
@@ -29,7 +37,7 @@ From the project root, with Wrangler logged in to Cloudflare:
 npx wrangler deploy
 ```
 
-The site is static assets only. There is no Worker script. The Worker name is `yield-calculator` and the assets directory is `./public`.
+That deploys the Worker and the static assets together. The Worker name is `yield-calculator`. Requests to `/api/*` run the Worker first. Every other path is served from `./public` through the `ASSETS` binding.
 
 ## How the figures are calculated
 
@@ -210,3 +218,51 @@ Price for 5% gross yield = $28,600 / 0.05 = $572,000
 | Price for 5% gross yield | $540,800 | $572,000 | $603,200 |
 
 Low rent management is 8% of $26,520 = $2,121.60. High rent management is 8% of $29,580 = $2,366.40.
+
+## Paste a Property Brokers listing link
+
+The field at the top of the calculator accepts one https link on `propertybrokers.co.nz`, `www.propertybrokers.co.nz`, `pb.co.nz` or `www.pb.co.nz`, and only when the path is `/residential/sale/...`. Other domains, other paths, and links that are not https are refused with a clear error.
+
+`GET /api/import?url=...` fetches that one page. The request uses a normal browser User-Agent and `Referer: https://www.propertybrokers.co.nz/`. A successful result is cached for one hour with the Cache API. The cache key is the listing link, not the caller's address.
+
+The parser uses three parts of the server HTML:
+
+- the schema.org `SingleFamilyResidence` block, for the address, suburb and town
+- the visible facts table, for floor area, land area, district rates, regional rates, LV and RV
+- the visible heading next to the bedroom and bathroom counts, for the asking price and the sale method
+
+District rates and regional rates are added together and written into Council rates. A missing RV stays blank.
+
+The compact listing JSON on the page can contain a `Price` field that is not shown to a visitor. That field is never read. A dollar amount in the description is not used either. The only price is one that appears in the visible heading, such as `$750,000` or `Buyers $399,000+`. For `Buyers $X+`, the purchase price is filled with X and the summary says the listing showed a plus. For tender, auction, deadline sale or by negotiation, the purchase price is left empty and the page says `No asking price shown (Tender). Enter the price you would pay.` The word in brackets is the sale method.
+
+The summary card shows the address, bedrooms and bathrooms, floor and land area, rates, LV and RV, sale method, and a link to the listing. Every filled input can still be edited.
+
+### Checked against the live listings on 22 November 2026
+
+| Listing | Visible price | Beds | Baths | Floor | Land | District rates | Regional rates | Council rates | LV | RV | Sale method |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| [103-105 Talbot Street, Whanganui East](https://www.propertybrokers.co.nz/residential/sale/103-105-talbot-street-whanganui-east-whanganui) | $750,000 | 6 | 2 | 200 square metres | 906 square metres | $5,514.86 | $273.61 | $5,788.47 | $175,000 | $185,000 | Asking price |
+| [30 Tay Street, Whanganui Central](https://www.propertybrokers.co.nz/residential/sale/30-tay-street-whanganui-central-whanganui) | Buyers $399,000+ (price filled with $399,000) | 2 | 1 | 80 square metres | 372 square metres | $3,476.11 | $437.64 | $3,913.75 | $145,000 | $400,000 | Buyers $399,000+ |
+| [21 Tayforth Road, Westmere](https://www.propertybrokers.co.nz/residential/sale/21-tayforth-road-westmere-whanganui) | Empty. Prompt: No asking price shown (Tender). Enter the price you would pay. | 4 | 2 | 225 square metres | 9,005 square metres | $3,193.95 | $340.25 | $3,534.20 | $400,000 | Not shown | Tender |
+
+The Tayforth page JSON does include a `Price` field. It is not shown on the listing, it is not returned by the import, and the purchase price stays empty.
+
+All three addresses match Whanganui District, so weekly rent is filled with $450 to $550. The label is: Market rent estimate from MBIE bond data (September 2026), not an appraisal.
+
+## Market rent from MBIE bond data
+
+`scripts/build-market-rents.mjs` downloads the current monthly territorial authority CSV linked from [Tenancy Services rental bond data](https://www.tenancy.govt.nz/about-tenancy-services/data-and-statistics/rental-bond-data/). The file used for this bundle is:
+
+https://www.tenancy.govt.nz/assets/Uploads/Tenancy/Rental-bond-data/detailed-monthly-tla-tenancy-november-2026.csv?m=b5db18eecf28e4ad8201e5a54005c172a6ca1c9f
+
+The latest month in that file is September 2026 (`2026-09-01`). The CSV is not split by bedroom. It has one lower quartile, median and upper quartile for all dwellings in each territorial authority. Those published figures are used for every bedroom count. They are not estimated, and they are not a bedroom-specific appraisal. If a listing town is not in the list below, the rent fields are left blank.
+
+| Territorial authority | Towns matched from the listing address | Lower quartile | Median | Upper quartile | Lodged bonds | Active bonds |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Whanganui District | Whanganui | $450 | $520 | $550 | 102 | 3,810 |
+| Palmerston North City | Palmerston North | $420 | $550 | $600 | 243 | 8,934 |
+| New Plymouth District | New Plymouth | $500 | $580 | $650 | 168 | 6,012 |
+| Manawatu District | Feilding | $500 | $550 | $610 | 48 | 1,578 |
+| Rangitikei District | Marton, Bulls | $375 | $480 | $555 | 18 | 831 |
+
+Low weekly rent is the lower quartile. High weekly rent is the upper quartile. The median is shown on the summary card and is not written into a field.

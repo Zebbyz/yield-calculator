@@ -330,12 +330,164 @@
     }
   }
 
+  const PRICE_HINT = "The price you would pay for the property.";
+
+  function setImportStatus(text, kind) {
+    const status = document.getElementById("import-status");
+    status.className = "import-status" + (kind ? " is-" + kind : "");
+    status.textContent = text;
+  }
+
+  function addFact(list, label, value) {
+    const row = document.createElement("div");
+    const term = document.createElement("dt");
+    term.textContent = label;
+    const detail = document.createElement("dd");
+    if (value instanceof Node) detail.append(value);
+    else detail.textContent = value;
+    row.append(term, detail);
+    list.append(row);
+  }
+
+  function areaText(sqm, raw) {
+    if (typeof sqm === "number" && Number.isFinite(sqm)) {
+      return String(Math.round(sqm)).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " square metres";
+    }
+    return raw || "Not shown";
+  }
+
+  function moneyOr(amount) {
+    return typeof amount === "number" ? YieldCalc.formatMoney(amount) : "not shown";
+  }
+
+  function renderCard(listing) {
+    const card = document.getElementById("import-card");
+    card.replaceChildren();
+    const address = document.createElement("p");
+    address.className = "import-address";
+    address.textContent = listing.address;
+    card.append(address);
+
+    const facts = document.createElement("dl");
+    facts.className = "import-facts";
+    const bedCount = listing.bedrooms;
+    const bathCount = listing.bathrooms;
+    const beds = typeof bedCount === "number" ? bedCount + (bedCount === 1 ? " bedroom" : " bedrooms") : "Not shown";
+    const baths = typeof bathCount === "number" ? bathCount + (bathCount === 1 ? " bathroom" : " bathrooms") : "Not shown";
+    addFact(facts, "Bedrooms and bathrooms", beds + ", " + baths);
+    addFact(facts, "Floor area", areaText(listing.floorAreaSqm, listing.floorAreaText));
+    addFact(facts, "Land area", areaText(listing.landAreaSqm, listing.landAreaText));
+    const councilText = typeof listing.councilRates === "number"
+      ? "Council rates filled with " + moneyOr(listing.councilRates) + "."
+      : "Council rates not shown.";
+    addFact(
+      facts,
+      "Rates",
+      "District rates " + moneyOr(listing.districtRates) + ". Regional rates " + moneyOr(listing.regionalRates) + ". " + councilText
+    );
+    addFact(
+      facts,
+      "Valuation",
+      "Land value (LV) " + moneyOr(listing.lv) + ". Rateable value (RV) " + moneyOr(listing.rv) + "."
+    );
+    addFact(facts, "Sale method", listing.saleMethod || "Not shown");
+    if (typeof listing.price === "number") {
+      const shown = listing.pricePlus
+        ? "Visible price " + listing.priceLabel + ". Purchase price filled with " + YieldCalc.formatMoney(listing.price) + "."
+        : "Visible asking price " + YieldCalc.formatMoney(listing.price) + ".";
+      addFact(facts, "Price", shown);
+    }
+    const link = document.createElement("a");
+    link.href = listing.url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "Open the listing";
+    addFact(facts, "Listing", link);
+    card.append(facts);
+
+    if (listing.pricePrompt) {
+      const prompt = document.createElement("p");
+      prompt.className = "import-prompt";
+      prompt.textContent = listing.pricePrompt;
+      card.append(prompt);
+    }
+    if (listing.rent && listing.rent.label) {
+      const rent = document.createElement("p");
+      rent.className = "import-rent";
+      rent.textContent = listing.rent.note ? listing.rent.label + ". " + listing.rent.note : listing.rent.label;
+      card.append(rent);
+    }
+    card.hidden = false;
+  }
+
+  function applyListing(listing) {
+    document.getElementById("price").value = listing.priceInput || "";
+    document.getElementById("price-hint").textContent = listing.pricePrompt || PRICE_HINT;
+    document.getElementById("rates").value = listing.councilRatesInput || "";
+    const estimate = document.getElementById("rent-estimate");
+    if (listing.rent && listing.rent.available) {
+      document.getElementById("rent-low").value = String(listing.rent.lower);
+      document.getElementById("rent-high").value = String(listing.rent.upper);
+      estimate.hidden = false;
+      estimate.textContent = listing.rent.label + ". " + listing.rent.note;
+    } else {
+      document.getElementById("rent-low").value = "";
+      document.getElementById("rent-high").value = "";
+      estimate.hidden = false;
+      estimate.textContent = (listing.rent && listing.rent.note) || "No market rent estimate for this town.";
+    }
+    renderCard(listing);
+    render();
+  }
+
+  function importListing() {
+    const raw = document.getElementById("import-url").value.trim();
+    const button = document.getElementById("import-button");
+    if (!raw) {
+      setImportStatus("Paste a Property Brokers listing link.", "error");
+      return;
+    }
+    button.disabled = true;
+    setImportStatus("Reading the listing page.", "");
+    fetch("/api/import?url=" + encodeURIComponent(raw), { headers: { Accept: "application/json" } })
+      .then(function (response) {
+        return response.json().then(function (payload) {
+          return { response: response, payload: payload };
+        }).catch(function () {
+          return { response: response, payload: null };
+        });
+      })
+      .then(function (result) {
+        if (!result.response.ok || !result.payload || !result.payload.ok) {
+          document.getElementById("import-card").hidden = true;
+          setImportStatus((result.payload && result.payload.error) || "The listing could not be imported.", "error");
+          return;
+        }
+        applyListing(result.payload.listing);
+        setImportStatus("Listing imported. The fields below are filled and you can still edit them.", "success");
+      })
+      .catch(function () {
+        document.getElementById("import-card").hidden = true;
+        setImportStatus("The listing could not be imported.", "error");
+      })
+      .then(function () {
+        button.disabled = false;
+      });
+  }
+
   form.addEventListener("submit", function (event) {
     event.preventDefault();
   });
   form.addEventListener("input", render);
   form.addEventListener("change", render);
   document.getElementById("copy-link").addEventListener("click", copyLink);
+  document.getElementById("import-button").addEventListener("click", importListing);
+  document.getElementById("import-url").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      importListing();
+    }
+  });
 
   applyQuery();
   render();

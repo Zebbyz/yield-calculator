@@ -1,0 +1,73 @@
+{
+  "sourceName": "MBIE Tenancy Services rental bond data",
+  "sourcePage": "https://www.tenancy.govt.nz/about-tenancy-services/data-and-statistics/rental-bond-data/",
+  "sourceUrl": "https://www.tenancy.govt.nz/assets/Uploads/Tenancy/Rental-bond-data/detailed-monthly-tla-tenancy-november-2026.csv?m=b5db18eecf28e4ad8201e5a54005c172a6ca1c9f",
+  "period": "2026-09",
+  "periodLabel": "September 2026",
+  "timeFrame": "2026-09-01",
+  "bedroomSplit": false,
+  "note": "The monthly territorial authority file reports one set of weekly rent quartiles for all dwellings. It is not split by bedroom. The same figures are used for every bedroom count. Town names are how a listing address is matched to an authority. They are not extra rent figures.",
+  "authorities": [
+    {
+      "name": "Whanganui District",
+      "towns": [
+        "whanganui"
+      ],
+      "timeFrame": "2026-09-01",
+      "lower": 450,
+      "median": 520,
+      "upper": 550,
+      "lodgedBonds": 102,
+      "activeBonds": 3810
+    },
+    {
+      "name": "Palmerston North City",
+      "towns": [
+        "palmerston north"
+      ],
+      "timeFrame": "2026-09-01",
+      "lower": 420,
+      "median": 550,
+      "upper": 600,
+      "lodgedBonds": 243,
+      "activeBonds": 8934
+    },
+    {
+      "name": "New Plymouth District",
+      "towns": [
+        "new plymouth"
+      ],
+      "timeFrame": "2026-09-01",
+      "lower": 500,
+      "median": 580,
+      "upper": 650,
+      "lodgedBonds": 168,
+      "activeBonds": 6012
+    },
+    {
+      "name": "Manawatu District",
+      "towns": [
+        "feilding"
+      ],
+      "timeFrame": "2026-09-01",
+      "lower": 500,
+      "median": 550,
+      "upper": 610,
+      "lodgedBonds": 48,
+      "activeBonds": 1578
+    },
+    {
+      "name": "Rangitikei District",
+      "towns": [
+        "marton",
+        "bulls"
+      ],
+      "timeFrame": "2026-09-01",
+      "lower": 375,
+      "median": 480,
+      "upper": 555,
+      "lodgedBonds": 18,
+      "activeBonds": 831
+    }
+  ]
+}
