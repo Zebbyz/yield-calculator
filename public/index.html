@@ -13,7 +13,7 @@
     <div class="wrap">
       <p class="kicker">New Zealand property</p>
       <h1>Rental Yield Calculator</h1>
-      <p class="lede">Estimate the return on a New Zealand rental before you buy. Enter a purchase price, a weekly rent bracket and your costs, or paste a Property Brokers listing link. Low, mid and high results update as you type. All amounts are in New Zealand dollars. The figures you type stay in this browser. Importing a listing sends that public link to this site so the listing page can be read. There is no account.</p>
+      <p class="lede">Estimate the return on a New Zealand rental before you buy. Enter a purchase price, a weekly rent bracket and your costs, or paste a Property Brokers listing link. Low, mid and high results update as you type. All amounts are in New Zealand dollars. The figures you type stay in this browser. Searching by address or importing a listing sends that address or public link to this site so the listing can be read. There is no account.</p>
     </div>
   </header>
   <main class="wrap">
@@ -24,6 +24,16 @@
     <form id="calculator" autocomplete="off" novalidate>
       <section class="panel" aria-labelledby="import-heading">
         <h2 id="import-heading">Import a listing</h2>
+        <label for="listing-search">Search by address</label>
+        <div class="combobox" id="listing-search-combo">
+          <input id="listing-search" class="listing-search" type="text" role="combobox" autocomplete="off" spellcheck="false" inputmode="search" placeholder="Start typing an address" aria-autocomplete="list" aria-expanded="false" aria-controls="listing-search-list" aria-describedby="listing-search-hint" aria-activedescendant="">
+          <div id="listing-search-popup" class="listing-popup" hidden>
+            <ul id="listing-search-list" role="listbox"></ul>
+            <p id="listing-search-empty" class="listing-empty" hidden aria-live="polite">No matching Property Brokers listings</p>
+          </div>
+        </div>
+        <p class="hint" id="listing-search-hint">Type at least 3 characters. Current residential sales in Whanganui, New Plymouth, Marton, Bulls, Feilding and Palmerston North.</p>
+        <p id="listing-search-status" class="import-status" role="status"></p>
         <label for="import-url">Paste a Property Brokers listing link</label>
         <div class="import-row">
           <input id="import-url" name="importUrl" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://www.propertybrokers.co.nz/residential/sale/...">

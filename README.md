@@ -14,6 +14,8 @@ Open the page, enter your own figures, and read low, mid and high rent results a
 - `src/index.js`: the Worker. It serves `GET /api/import` and passes every other request to the assets binding
 - `src/parser.js`: reads a Property Brokers listing page
 - `src/rents.js`: matches a listing town to the bundled bond data
+- `src/search.js`: asks Property Brokers for residential sale addresses and keeps the visible price label
+- `src/search.test.mjs`: checks that search ignores hidden prices, other towns, and rentals
 - `src/url.js`: allows only https Property Brokers residential sale links
 - `src/market-rents.json`: lower quartile, median and upper quartile weekly rents from the MBIE monthly CSV
 - `scripts/build-market-rents.mjs`: downloads that CSV and rewrites `src/market-rents.json`
@@ -236,6 +238,21 @@ District rates and regional rates are added together and written into Council ra
 The compact listing JSON on the page can contain a `Price` field that is not shown to a visitor. That field is never read. A dollar amount in the description is not used either. The only price is one that appears in the visible heading, such as `$750,000` or `Buyers $399,000+`. For `Buyers $X+`, the purchase price is filled with X and the summary says the listing showed a plus. For tender, auction, deadline sale or by negotiation, the purchase price is left empty and the page says `No asking price shown (Tender). Enter the price you would pay.` The word in brackets is the sale method.
 
 The summary card shows the address, bedrooms and bathrooms, floor and land area, rates, LV and RV, sale method, and a link to the listing. Every filled input can still be edited.
+
+### Search by address
+
+The same card has an address search. After a short pause, and once there are at least 3 characters, `GET /api/search?q=` asks Property Brokers for current residential sales. The request is the same shape as the Property Brokers search box: one call to `/refinedsearch/ElasticListingQuery?returnJson=true`, with `Referer: https://www.propertybrokers.co.nz/`. It asks for residential sale listings in Whanganui, New Plymouth, Marton, Bulls, Feilding and Palmerston North, and returns at most 10. Each query is cached for 15 minutes. A second search is not sent for the same words until that cache expires.
+
+The dropdown shows the address, suburb, town, and the visible price label from Property Brokers (`PriceDisplay`). A hidden numeric price on the same record is ignored. Choosing a row imports that listing. Arrow keys move through the list, Enter imports the highlighted row, and Escape closes the list. If nothing matches, the list says: No matching Property Brokers listings. If Property Brokers cannot be reached, the message is: Property Brokers search could not be reached. You can still paste a listing link.
+
+Checked against the live search on 22 November 2026:
+
+| Search | Results |
+| --- | --- |
+| Ingestre | 68 Ingestre Street, Whanganui Central, Whanganui. Visible price $542,000 + GST (if any). |
+| 156 Bell | No matching Property Brokers listings. |
+| Halswell | 19 Halswell Crescent, Westbrook, Palmerston North, Buyers $465,000+. Unit C2, 59 Halswell Street, Whanganui Central, Whanganui, Buyers $240,000+. No Christchurch listing. |
+| Talbot | 103-105 Talbot Street, Whanganui East, visible price $750,000. 78 Talbot Street, Whanganui East, Buyers $249,000+. |
 
 ### Checked against the live listings on 22 November 2026
 

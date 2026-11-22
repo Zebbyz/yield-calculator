@@ -489,6 +489,196 @@
     }
   });
 
+  const searchInput = document.getElementById("listing-search");
+  const searchPopup = document.getElementById("listing-search-popup");
+  const searchList = document.getElementById("listing-search-list");
+  const searchEmpty = document.getElementById("listing-search-empty");
+  const searchStatus = document.getElementById("listing-search-status");
+  const searchPanel = document.getElementById("import-heading").closest("section");
+  let searchTimer = 0;
+  let searchToken = 0;
+  let searchResults = [];
+  let searchActive = -1;
+
+  function setSearchStatus(text, kind) {
+    searchStatus.className = "import-status" + (kind ? " is-" + kind : "");
+    searchStatus.textContent = text;
+  }
+
+  function optionId(index) {
+    return "listing-option-" + index;
+  }
+
+  function closeSearch(clearStatus) {
+    searchPopup.hidden = true;
+    searchList.hidden = false;
+    searchEmpty.hidden = true;
+    searchInput.setAttribute("aria-expanded", "false");
+    searchInput.setAttribute("aria-activedescendant", "");
+    searchPanel.classList.remove("is-search-open");
+    searchActive = -1;
+    if (clearStatus) setSearchStatus("", "");
+  }
+
+  function placeSearchPopup() {
+    const rect = searchInput.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom - 16;
+    const spaceAbove = rect.top - 16;
+    const above = spaceBelow < 220 && spaceAbove > spaceBelow;
+    searchPopup.classList.toggle("is-above", above);
+    const available = Math.max(0, above ? spaceAbove : spaceBelow);
+    searchPopup.style.maxHeight = Math.min(320, available) + "px";
+  }
+
+  function openSearchPopup() {
+    searchPanel.classList.add("is-search-open");
+    searchPopup.hidden = false;
+    placeSearchPopup();
+    searchInput.setAttribute("aria-expanded", "true");
+  }
+
+  function showSearchEmpty() {
+    searchResults = [];
+    searchActive = -1;
+    searchList.replaceChildren();
+    searchList.hidden = true;
+    searchEmpty.hidden = false;
+    searchInput.setAttribute("aria-activedescendant", "");
+    openSearchPopup();
+    setSearchStatus("", "");
+  }
+
+  function renderSearchOptions() {
+    searchList.replaceChildren();
+    searchEmpty.hidden = true;
+    searchList.hidden = false;
+    searchResults.forEach(function (result, index) {
+      const option = document.createElement("li");
+      option.id = optionId(index);
+      option.className = "listing-option";
+      option.setAttribute("role", "option");
+      option.setAttribute("aria-selected", index === searchActive ? "true" : "false");
+      const address = document.createElement("span");
+      address.textContent = result.address;
+      const place = document.createElement("span");
+      place.className = "listing-option-place";
+      place.textContent = result.suburb + ", " + result.town;
+      const price = document.createElement("span");
+      price.className = "listing-option-price";
+      price.textContent = result.priceLabel;
+      option.append(address, place, price);
+      option.addEventListener("mousedown", function (event) {
+        event.preventDefault();
+        chooseSearchResult(index);
+      });
+      searchList.append(option);
+    });
+    openSearchPopup();
+    const active = searchActive >= 0 ? document.getElementById(optionId(searchActive)) : null;
+    searchInput.setAttribute("aria-activedescendant", active ? active.id : "");
+    if (active) active.scrollIntoView({ block: "nearest" });
+  }
+
+  function moveSearchActive(next) {
+    if (!searchResults.length || searchPopup.hidden) return;
+    if (next < 0) next = 0;
+    if (next >= searchResults.length) next = searchResults.length - 1;
+    searchActive = next;
+    renderSearchOptions();
+  }
+
+  function chooseSearchResult(index) {
+    const result = searchResults[index];
+    if (!result) return;
+    searchInput.value = result.address;
+    closeSearch(true);
+    document.getElementById("import-url").value = result.url;
+    importListing();
+  }
+
+  function runSearch() {
+    const query = searchInput.value.trim().replace(/\s+/g, " ");
+    if (query.length < 3) {
+      searchToken += 1;
+      closeSearch(true);
+      return;
+    }
+    const token = searchToken + 1;
+    searchToken = token;
+    setSearchStatus("Searching listings.", "");
+    fetch("/api/search?q=" + encodeURIComponent(query), { headers: { Accept: "application/json" } })
+      .then(function (response) {
+        return response.json().then(function (payload) {
+          return { response: response, payload: payload };
+        }).catch(function () {
+          return { response: response, payload: null };
+        });
+      })
+      .then(function (result) {
+        if (token !== searchToken) return;
+        if (!result.response.ok || !result.payload || !result.payload.ok) {
+          searchResults = [];
+          closeSearch(false);
+          setSearchStatus((result.payload && result.payload.error) || "Property Brokers search could not be reached. You can still paste a listing link.", "error");
+          return;
+        }
+        searchResults = result.payload.results || [];
+        searchActive = -1;
+        if (!searchResults.length) {
+          showSearchEmpty();
+          return;
+        }
+        setSearchStatus(searchResults.length === 1 ? "1 listing." : searchResults.length + " listings.", "");
+        renderSearchOptions();
+      })
+      .catch(function () {
+        if (token !== searchToken) return;
+        searchResults = [];
+        closeSearch(false);
+        setSearchStatus("Property Brokers search could not be reached. You can still paste a listing link.", "error");
+      });
+  }
+
+  function scheduleSearch() {
+    window.clearTimeout(searchTimer);
+    searchTimer = window.setTimeout(runSearch, 300);
+  }
+
+  searchInput.addEventListener("input", scheduleSearch);
+  searchInput.addEventListener("keydown", function (event) {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      if (searchPopup.hidden || !searchResults.length) return;
+      moveSearchActive(searchActive + 1);
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      if (searchPopup.hidden || !searchResults.length) return;
+      moveSearchActive(searchActive < 0 ? 0 : searchActive - 1);
+      return;
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      if (searchPopup.hidden || !searchResults.length) return;
+      chooseSearchResult(searchActive >= 0 ? searchActive : 0);
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeSearch(true);
+    }
+  });
+  searchInput.addEventListener("blur", function () {
+    window.setTimeout(function () {
+      if (document.activeElement === searchInput) return;
+      closeSearch(false);
+    }, 150);
+  });
+  window.addEventListener("resize", function () {
+    if (!searchPopup.hidden) placeSearchPopup();
+  });
+
   applyQuery();
   render();
 })();

@@ -1,6 +1,7 @@
 import marketRents from "./market-rents.json" with { type: "json" };
 import { parseListing } from "./parser.js";
 import { suggestRent } from "./rents.js";
+import { normaliseQuery, parseSearchPayload, SEARCH_CACHE_SECONDS, upstreamSearchUrl } from "./search.js";
 import { validateListingUrl } from "./url.js";
 
 const BROWSER_HEADERS = {
@@ -92,10 +93,80 @@ async function handleImport(request, ctx) {
   return new Response(body, { status: 200, headers: { ...headers, "X-Import-Cache": "miss" } });
 }
 
+function searchCacheRequest(query) {
+  const key = new URL("https://yield-calculator.internal/api/search");
+  key.searchParams.set("q", query);
+  return new Request(key.toString(), { method: "GET" });
+}
+
+async function handleSearch(request, ctx) {
+  if (request.method !== "GET") {
+    return errorResponse(405, "Use a GET request with the search words.");
+  }
+  const incoming = new URL(request.url);
+  const query = normaliseQuery(incoming.searchParams.get("q"));
+  if (query.length < 3) {
+    return errorResponse(400, "Type at least 3 characters.");
+  }
+  if (query.length > 80) {
+    return errorResponse(400, "That search is too long.");
+  }
+
+  const cache = typeof caches === "undefined" ? null : caches.default;
+  const cacheKey = searchCacheRequest(query);
+  if (cache) {
+    const cached = await cache.match(cacheKey);
+    if (cached) return cached;
+  }
+
+  let response;
+  try {
+    response = await fetch(upstreamSearchUrl(query), {
+      method: "GET",
+      redirect: "follow",
+      headers: {
+        "User-Agent": BROWSER_HEADERS["User-Agent"],
+        Referer: "https://www.propertybrokers.co.nz/",
+        Accept: "application/json",
+      },
+      signal: AbortSignal.timeout(15000),
+    });
+  } catch (error) {
+    return errorResponse(502, "Property Brokers search could not be reached. You can still paste a listing link.");
+  }
+  if (!response.ok) {
+    return errorResponse(502, "Property Brokers search could not be reached. You can still paste a listing link.");
+  }
+  const finalHost = new URL(response.url).hostname.toLowerCase();
+  if (finalHost !== "www.propertybrokers.co.nz" && finalHost !== "propertybrokers.co.nz") {
+    return errorResponse(502, "Property Brokers search could not be reached. You can still paste a listing link.");
+  }
+  let payload;
+  try {
+    payload = await response.json();
+  } catch (error) {
+    return errorResponse(502, "Property Brokers search could not be reached. You can still paste a listing link.");
+  }
+
+  const body = JSON.stringify({ ok: true, results: parseSearchPayload(payload) });
+  const headers = {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "public, max-age=" + SEARCH_CACHE_SECONDS,
+  };
+  if (cache && ctx) {
+    ctx.waitUntil(cache.put(cacheKey, new Response(body, {
+      status: 200,
+      headers: { ...headers, "X-Search-Cache": "hit" },
+    })));
+  }
+  return new Response(body, { status: 200, headers: { ...headers, "X-Search-Cache": "miss" } });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (url.pathname === "/api/import") return handleImport(request, ctx);
+    if (url.pathname === "/api/search") return handleSearch(request, ctx);
     return env.ASSETS.fetch(request);
   },
 };
